@@ -7,12 +7,13 @@
 #include "Arduino.h"
 #include "AS5045.h"
 
-encoder::encoder(int clock_pin, int CSn_pin, int input_pin, float wheel_diam)
+encoder::encoder(int clock_pin, int CSn_pin, int input_pin, float wheel_diam, bool reverse)
 {
   _clock_pin  = clock_pin;
   _CSn_pin    = CSn_pin;
   _input_pin  = input_pin;
   _wheel_diam = wheel_diam;
+  _reverse    = reverse;
 }
 
 void encoder::setup_rotary_encoder()
@@ -72,8 +73,11 @@ float encoder::rotary_data()
   }
 
   //Serial.println(cnt);
-
-  true_dist = - _wheel_diam*(cnt*pi + true_rad/(2));  //negative in front for the wheel rolling direction relative to scorpion
+  //handle reverse value here
+  if (_reverse) true_dist = _wheel_diam*(cnt*pi + true_rad/(2));  //negative in front for the wheel rolling direction relative to scorpion
+  else true_dist = - _wheel_diam*(cnt*pi + true_rad/(2));  //negative in front for the wheel rolling direction relative to scorpion
+  
+  // true_dist = - _wheel_diam*(cnt*pi + true_rad/(2));  //negative in front for the wheel rolling direction relative to scorpion
    
   prev_rad = true_rad;
   

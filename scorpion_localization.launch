@@ -7,7 +7,7 @@
     <node pkg="tf2_ros" type="static_transform_publisher" name="bno_imu" args="0 0.15 0 0 0 0 base_link imu_link" />
     <node pkg="tf2_ros" type="static_transform_publisher" name="ppp_gps" args="0.08305 0 0.5588 0 0 0 base_link gps" />
 
-    <!--node pkg="rosbag" type="play" name="rosbagplay" args="/home/aaaaaaron/minebot_ws/src/husky/fve_encore/run5clean.bag --clock -d 5 -r 2" required="true"/-->
+    <!--node pkg="rosbag" type="play" name="rosbagplay" args="/home/aaaaaaron/scorpion_ws/src/scorpion_localization/test_bags/run5clean.bag --clock -d 5 -r 2" required="true"/-->
 
     <node name="ekf" pkg="robot_localization" type="ekf_localization_node" clear_params="true" >
 

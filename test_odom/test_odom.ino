@@ -10,10 +10,10 @@ float right_dist = 0;
 //extern float vx;
 //extern float vz;
 
-encoder right_wheel(6, 5, 7, 101.6); //clk, csn, input, wheel diameter
+encoder right_wheel(6, 5, 7, 101.6, true); //clk, csn, input, wheel diameter
 
 void setup() {
-  Serial.begin(38400);
+  Serial.begin(115200);
   right_wheel.setup_rotary_encoder();
   right_wheel.calibrate_rotary_encoder();
 }

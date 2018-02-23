@@ -12,7 +12,8 @@
 class encoder
 {
   public:
-    encoder(int clock_pin, int CSn_pin, int input_pin, float wheel_diam);
+    //if reverse is true, it probably means its the right wheel
+    encoder(int clock_pin, int CSn_pin, int input_pin, float wheel_diam, bool reverse);
     void setup_rotary_encoder();
     void calibrate_rotary_encoder();
     float rotary_data();
@@ -44,6 +45,7 @@ class encoder
     int _input_pin;
     float _resting_angle;
     float _wheel_diam;
+    bool _reverse;
 };
 
 #endif

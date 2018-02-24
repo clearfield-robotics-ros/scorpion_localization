@@ -45,7 +45,7 @@
 #include <geometry_msgs/Point32.h>
 #include <nav_msgs/Odometry.h>
 
-#include <AS5045.h>
+#include <AS5045_scorpion.h>
 
 // BNO055 Register Map
 // http://ae-bst.resource.bosch.com/media/products/dokumente/bno055/BST_BNO055_DS000_10_Release.pdf
@@ -382,8 +382,9 @@ float pi = 3.1416;
 
 int parse = 0;
 
-encoder left_wheel(6, 5, 7, 101.6);
-encoder right_wheel(9, 8, 10, 101.6);
+//encoder left_wheel(6, 5, 7, 101.6);
+//encoder right_wheel(9, 8, 10, 101.6);
+scorpion_wheels scorpion(5, 6, 7, 8, 101.6, 1.10515);//CSn, Clk, left, right, wheel diam, base_width
 
 void setup()
 {
@@ -496,9 +497,11 @@ void setup()
   
   initBNO055(); // Initialize the BNO055
 
-  left_wheel.setup_rotary_encoder();
-  left_wheel.calibrate_rotary_encoder();
-  past_micros = micros();
+//  left_wheel.setup_rotary_encoder();
+//  left_wheel.calibrate_rotary_encoder();
+//  past_micros = micros();
+  scorpion.setup_rotary_encoders();
+  scorpion.calibrate_rotary_encoders();
 
   nh.getHardware()->setBaud(115200);
   nh.initNode();
@@ -688,15 +691,16 @@ void loop()
 //    sum = 0;    
 //    }
 
-   float left_dist  = left_wheel.rotary_data();   //check units
-   float right_dist = right_wheel.rotary_data();
-   dt_micros = micros() - past_micros;
-   float left_v = (left_dist - left_past_dist) * 1000 / dt_micros;   //m/s
-   float right_v = (right_dist - right_past_dist) * 1000 / dt_micros;
-   get_odom(left_v, right_v);  //getting vx and vz (vth)
-   left_past_dist = left_dist;
-   right_past_dist = right_dist;
-   past_micros = micros();
+//   float left_dist  = left_wheel.rotary_data();   //check units
+//   float right_dist = right_wheel.rotary_data();
+//   dt_micros = micros() - past_micros;
+//   float left_v = (left_dist - left_past_dist) * 1000 / dt_micros;   //m/s
+//   float right_v = (right_dist - right_past_dist) * 1000 / dt_micros;
+//   get_odom(left_v, right_v);  //getting vx and vz (vth)
+//   left_past_dist = left_dist;
+//   right_past_dist = right_dist;
+//   past_micros = micros();
+   scorpion.get_vx_vth();
 
    readyOdomMsg();
    readyImuMsg();
@@ -1247,9 +1251,9 @@ void readyOdomMsg(){
   odom_msg.pose.covariance[28]      = 0.001;  //0.0,    0.0,    0.0,    0.0,    0.001,  0.0,
   odom_msg.pose.covariance[35]      = 0.03;   //0.0,    0.0,    0.0,    0.0,    0.0,    0.03
 
-  odom_msg.twist.twist.linear.x     = vx;  //change this
+  odom_msg.twist.twist.linear.x     = scorpion.vx;  //change this
   odom_msg.twist.twist.linear.y     = 0.0;
-  odom_msg.twist.twist.linear.z     = vz;       
+  odom_msg.twist.twist.linear.z     = scorpion.vth;       
   odom_msg.twist.twist.angular.x    = 0.0;   
   odom_msg.twist.twist.angular.y    = 0.0;  
   odom_msg.twist.twist.angular.z    = 0.0;

@@ -7,7 +7,7 @@
 #include "Arduino.h"
 #include "AS5045_scorpion.h"
 
-scorpion_wheels::scorpion_wheels(int clock_pin, int CSn_pin, int left_input, int right_input, float wheel_diam, float base_width)
+scorpion_wheels::scorpion_wheels(int CSn_pin, int clock_pin, int left_input, int right_input, float wheel_diam, float base_width)
 {
   _clock_pin  = clock_pin;
   _CSn_pin    = CSn_pin;
@@ -102,8 +102,8 @@ void scorpion_wheels::dist_data()
   }
 
   //handle reverse value here
-  left_dist       = - _wheel_diam*100*(left_cnt*pi + left_true_rad/(2));
-  right_dist      = _wheel_diam*100*(right_cnt*pi + right_true_rad/(2));
+  left_dist       = - _wheel_diam*(left_cnt*pi + left_true_rad/(2));
+  right_dist      = _wheel_diam*(right_cnt*pi + right_true_rad/(2));
   // true_dist = - _wheel_diam*(cnt*pi + true_rad/(2));  //negative in front for the wheel rolling direction relative to scorpion
    
   left_prev_rad   = left_true_rad;

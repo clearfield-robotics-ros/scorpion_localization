@@ -3,39 +3,8 @@
  date: April 25, 2015
  license: Beerware - Use this code however you'd like. If you 
  find it useful you can buy me a beer some time.
- 
- Demonstrates basic BNO055 functionality including parameterizing the register addresses, 
- initializing the sensor, getting properly scaled accelerometer, gyroscope, and magnetometer data out. 
- 
- Addition of 9 DoF sensor fusion using open source Madgwick and Mahony filter algorithms. 
- Can compare results to hardware 9 DoF sensor fusion carried out on the BNO055.
- Sketch runs on the 3.3 V 8 MHz Pro Mini and the Teensy 3.1.
- 
- This sketch is intended specifically for the Wearable BNO055 Nano Board for the Teensy 3.1.
- It uses SDA/SCL on pins 17/16, respectively, and it uses the Teensy 3.1-specific Wire library i2c_t3.h.
- 
- The Add-on shield can also be used as a stand-alone breakout board for any Arduino, Teensy, or 
- other microcontroller by closing the solder jumpers on the back of the board.
-  
- All sensors communicate via I2C at 400 Hz or higher.
- SDA and SCL should have external pull-up resistors (to 3.3V).
- 4K7 resistors are on the BNO055 Nano breakout board.
- 
- Hardware setup:
- Breakout Board --------- Arduino/Teensy
- 3V3 ---------------------- 3.3V
- SDA -----------------------A4/17
- SCL -----------------------A5/16
- GND ---------------------- GND
- 
- Note: The BNO055 Nano breakout board is an I2C sensor and uses the Arduino Wire or Teensy i2c_t3.h library. 
- Because the sensor is not 5V tolerant, we are using a 3.3 V 8 MHz Pro Mini or a 3.3 V Teensy 3.1.
- We have disabled the internal pull-ups used by the Wire library in the Wire.h/twi.c utility file.
- We are also using the 400 kHz fast I2C mode by setting the TWI_FREQ  to 400000L /twi.h utility file.
- The Teensy has no internal pullups and we are using the Wire.begin function of the i2c_t3.h library
- to select 400 Hz i2c speed.
- */
-//#include <Wire.h>   
+
+*/
 #include <i2c_t3.h>
 #include <SPI.h>
 #include <ros.h>
@@ -44,6 +13,7 @@
 #include <sensor_msgs/Imu.h>
 #include <geometry_msgs/Point32.h>
 #include <nav_msgs/Odometry.h>
+#include <AS5045.h>
 
 #include <AS5045_scorpion.h>
 
@@ -300,14 +270,18 @@ char odom_frame_id[] = "odom";
 char odom_child_frame_id[] = "base_link";
 int odom_seqVal = 0;
 int ODOM_DELAY_MS = 20;
-long dt_micros = 0;
-long past_micros = 0;
+
+long dt_right_micros = 0;
+long past_right_micros = 0;
+long dt_left_micros = 0;
+long past_left_micros = 0;
 float left_past_dist = 0;
 float right_past_dist = 0;
 float left_dist = 0;
 float right_dist = 0;
-extern float vx;
-extern float vz;
+float vx;
+float vz;
+float base_width = 1.10515;
 
 uint8_t GPwrMode = NormalG;    // Gyro power mode
 uint8_t Gscale = GFS_250DPS;  // Gyro full scale
@@ -382,15 +356,11 @@ float pi = 3.1416;
 
 int parse = 0;
 
-//encoder left_wheel(6, 5, 7, 101.6);
-//encoder right_wheel(9, 8, 10, 101.6);
-scorpion_wheels scorpion(5, 6, 7, 8, 101.6, 1.10515);//CSn, Clk, left, right, wheel diam, base_width
+encoder right_wheel(6, 7, 5, 101.6, true);
+encoder left_wheel(9, 10, 8, 101.6, false);
 
 void setup()
 {
-//  Wire.begin();
-//  TWBR = 12;  // 400 kbit/sec I2C speed for Pro Mini
-  // Setup for Master mode, pins 16/17, external pullups, 400kHz for Teensy 3.1
   Wire.begin(I2C_MASTER, 0x00, I2C_PINS_18_19, I2C_PULLUP_EXT, I2C_RATE_400);
   delay(4000);
   Serial.begin(38400);
@@ -399,319 +369,80 @@ void setup()
   pinMode(intPin, INPUT);
   pinMode(myLed, OUTPUT);
   digitalWrite(myLed, HIGH);
-
-//  delay(1000);
-//
-//  I2Cscan(); // check for I2C devices on the bus8
-//  
-//  // Read the WHO_AM_I register, this is a good test of communication
-//  Serial.println("BNO055 9-axis motion sensor...");
-//  byte c = readByte(BNO055_ADDRESS, BNO055_CHIP_ID);  // Read WHO_AM_I register for BNO055
-//  Serial.print("BNO055 Address = 0x"); Serial.println(BNO055_ADDRESS, HEX);
-//  Serial.print("BNO055 WHO_AM_I = 0x"); Serial.println(BNO055_CHIP_ID, HEX);
-//  Serial.print("BNO055 "); Serial.print("I AM "); Serial.print(c, HEX); Serial.println(" I should be 0xA0");  
-// 
-//  delay(1000); 
-  
-   
-    // Read the WHO_AM_I register of the accelerometer, this is a good test of communication
-//  byte d = readByte(BNO055_ADDRESS, BNO055_ACC_ID);  // Read WHO_AM_I register for accelerometer
-//  Serial.print("BNO055 ACC "); Serial.print("I AM "); Serial.print(d, HEX); Serial.println(" I should be 0xFB");  
-// 
-//  delay(1000); 
-//  
-//  // Read the WHO_AM_I register of the magnetometer, this is a good test of communication
-//  byte e = readByte(BNO055_ADDRESS, BNO055_MAG_ID);  // Read WHO_AM_I register for magnetometer
-//  Serial.print("BNO055 MAG "); Serial.print("I AM "); Serial.print(e, HEX); Serial.println(" I should be 0x32");
-// 
-//  delay(1000);   
-//  
-//  // Read the WHO_AM_I register of the gyroscope, this is a good test of communication
-//  byte f = readByte(BNO055_ADDRESS, BNO055_GYRO_ID);  // Read WHO_AM_I register for LIS3MDL
-//  Serial.print("BNO055 GYRO "); Serial.print("I AM "); Serial.print(f, HEX); Serial.println(" I should be 0x0F");
-// 
-//  delay(1000); 
-
-//  if (c == 0xA0) // BNO055 WHO_AM_I should always be 0xA0
-//  {  
-//    Serial.println("BNO055 is online...");
-//    
-//    // Check software revision ID
-//    byte swlsb = readByte(BNO055_ADDRESS, BNO055_SW_REV_ID_LSB);
-//    byte swmsb = readByte(BNO055_ADDRESS, BNO055_SW_REV_ID_MSB);
-//    Serial.print("BNO055 SW Revision ID: "); Serial.print(swmsb, HEX); Serial.print("."); Serial.println(swlsb, HEX); 
-//    Serial.println("Should be 03.04");
-//    
-//    // Check bootloader version
-//    byte blid = readByte(BNO055_ADDRESS, BNO055_BL_REV_ID);
-//    Serial.print("BNO055 bootloader Version: "); Serial.println(blid); 
-//    
-//    // Check self-test results
-//    byte selftest = readByte(BNO055_ADDRESS, BNO055_ST_RESULT);
-//    
-//    if(selftest & 0x01) {
-//      Serial.println("accelerometer passed selftest"); 
-//    } else {
-//      Serial.println("accelerometer failed selftest"); 
-//    }
-//    if(selftest & 0x02) {
-//      Serial.println("magnetometer passed selftest"); 
-//    } else {
-//      Serial.println("magnetometer failed selftest"); 
-//    }  
-//    if(selftest & 0x04) {
-//      Serial.println("gyroscope passed selftest"); 
-//    } else {
-//      Serial.println("gyroscope failed selftest"); 
-//    }      
-//    if(selftest & 0x08) {
-//      Serial.println("MCU passed selftest"); 
-//    } else {
-//      Serial.println("MCU failed selftest"); 
-//    }
-//      
-//    delay(1000);
- 
-//  accelgyroCalBNO055(accelBias, gyroBias);
-//  calAccelGyro();
-  
-//  Serial.println("Average accelerometer bias (mg) = "); Serial.println(accelBias[0]); Serial.println(accelBias[1]); Serial.println(accelBias[2]);
-//  Serial.println("Average gyro bias (dps) = "); Serial.println(gyroBias[0]); Serial.println(gyroBias[1]); Serial.println(gyroBias[2]);
-
-//  delay(1000); 
-  
-//  magCalBNO055(magBias);
-//  calMag();
-  
-//  Serial.println("Average magnetometer bias (mG) = "); Serial.println(magBias[0]); Serial.println(magBias[1]); Serial.println(magBias[2]);
-
-//  delay(1000); 
-  
-  // Check calibration status of the sensors
-//  uint8_t calstat = readByte(BNO055_ADDRESS, BNO055_CALIB_STAT);
-//  Serial.println("Not calibrated = 0, fully calibrated = 3");
-//  Serial.print("System calibration status "); Serial.println( (0xC0 & calstat) >> 6);
-//  Serial.print("Gyro   calibration status "); Serial.println( (0x30 & calstat) >> 4);
-//  Serial.print("Accel  calibration status "); Serial.println( (0x0C & calstat) >> 2);
-//  Serial.print("Mag    calibration status "); Serial.println( (0x03 & calstat) >> 0);
   
   initBNO055(); // Initialize the BNO055
 
-//  left_wheel.setup_rotary_encoder();
-//  left_wheel.calibrate_rotary_encoder();
-//  past_micros = micros();
-  scorpion.setup_rotary_encoders();
-  scorpion.calibrate_rotary_encoders();
+  right_wheel.setup_rotary_encoder();
+  right_wheel.calibrate_rotary_encoder();
+  left_wheel.setup_rotary_encoder();
+  left_wheel.calibrate_rotary_encoder();
 
   nh.getHardware()->setBaud(115200);
   nh.initNode();
   nh.advertise(imuPub);
   nh.advertise(imuStatPub);
-//  nh.advertise(odomPub);
+  nh.advertise(odomPub);
 }
 
 void loop()
 {  
-    readAccelData(accelCount);  // Read the x/y/z adc values
-    // Now we'll calculate the accleration value into actual mg's
-    ax = (float)accelCount[0]; // - accelBias[0];  // subtract off calculated accel bias
-    ay = (float)accelCount[1]; // - accelBias[1];
-    az = (float)accelCount[2]; // - accelBias[2]; 
+  readAccelData(accelCount);  // Read the x/y/z adc values
+  // Now we'll calculate the accleration value into actual mg's
+  ax = (float)accelCount[0]; // - accelBias[0];  // subtract off calculated accel bias
+  ay = (float)accelCount[1]; // - accelBias[1];
+  az = (float)accelCount[2]; // - accelBias[2]; 
 
-    readGyroData(gyroCount);  // Read the x/y/z adc values
-    // Calculate the gyro value into actual degrees per second
-    gx = (float)gyroCount[0]/16.; // - gyroBias[0];  // subtract off calculated gyro bias
-    gy = (float)gyroCount[1]/16.; // - gyroBias[1];  
-    gz = (float)gyroCount[2]/16.; // - gyroBias[2];   
+  readGyroData(gyroCount);  // Read the x/y/z adc values
+  // Calculate the gyro value into actual degrees per second
+  gx = (float)gyroCount[0]/16.; // - gyroBias[0];  // subtract off calculated gyro bias
+  gy = (float)gyroCount[1]/16.; // - gyroBias[1];  
+  gz = (float)gyroCount[2]/16.; // - gyroBias[2];   
 
-    readMagData(magCount);  // Read the x/y/z adc values   
-    // Calculate the magnetometer values in milliGauss
-    mx = (float)magCount[0]/1.6; // - magBias[0];  // get actual magnetometer value in mGauss 
-    my = (float)magCount[1]/1.6; // - magBias[1];  
-    mz = (float)magCount[2]/1.6; // - magBias[2];   
+  readMagData(magCount);  // Read the x/y/z adc values   
+  // Calculate the magnetometer values in milliGauss
+  mx = (float)magCount[0]/1.6; // - magBias[0];  // get actual magnetometer value in mGauss 
+  my = (float)magCount[1]/1.6; // - magBias[1];  
+  mz = (float)magCount[2]/1.6; // - magBias[2];   
     
-    readQuatData(quatCount);  // Read the x/y/z adc values   
-    // Calculate the quaternion values  
-    ow = (float)(quatCount[0])/16384.;    
-    ox = (float)(quatCount[1])/16384.;  
-    oy = (float)(quatCount[2])/16384.;   
-    oz = (float)(quatCount[3])/16384.;   
+  readQuatData(quatCount);  // Read the x/y/z adc values   
+  // Calculate the quaternion values  
+  ow = (float)(quatCount[0])/16384.;    
+  ox = (float)(quatCount[1])/16384.;  
+  oy = (float)(quatCount[2])/16384.;   
+  oz = (float)(quatCount[3])/16384.;   
 
-    // Check calibration status of the sensors
-    uint8_t calstat = readByte(BNO055_ADDRESS, BNO055_CALIB_STAT);
-    fullSystem  = (0xC0 & calstat) >> 6;
-    gyro        = (0x30 & calstat) >> 4;
-    accel       = (0x0C & calstat) >> 2;
-    mag         = (0x03 & calstat) >> 0;
-//    Serial.println("Not calibrated = 0, fully calibrated = 3");
-//    Serial.print("System calibration status "); Serial.println( (0xC0 & calstat) >> 6);
-//    Serial.print("Gyro   calibration status "); Serial.println( (0x30 & calstat) >> 4);
-//    Serial.print("Accel  calibration status "); Serial.println( (0x0C & calstat) >> 2);
-//    Serial.print("Mag    calibration status "); Serial.println( (0x03 & calstat) >> 0);
+  // Check calibration status of the sensors
+  uint8_t calstat = readByte(BNO055_ADDRESS, BNO055_CALIB_STAT);
+  fullSystem  = (0xC0 & calstat) >> 6;
+  gyro        = (0x30 & calstat) >> 4;
+  accel       = (0x0C & calstat) >> 2;
+  mag         = (0x03 & calstat) >> 0;
 
-    
-//    readEulData(EulCount);  // Read the x/y/z adc values   
-//    // Calculate the Euler angles values in degrees
-//    Yaw = (float)EulCount[0]/16.;  
-//    Roll = (float)EulCount[1]/16.;  
-//    Pitch = (float)EulCount[2]/16.;   
-// 
-//    readLIAData(LIACount);  // Read the x/y/z adc values   
-//    // Calculate the linear acceleration (sans gravity) values in mg
-//    LIAx = (float)LIACount[0];  
-//    LIAy = (float)LIACount[1];  
-//    LIAz = (float)LIACount[2];   
-//
-//    readGRVData(GRVCount);  // Read the x/y/z adc values   
-//    // Calculate the linear acceleration (sans gravity) values in mg
-//    GRVx = (float)GRVCount[0];  
-//    GRVy = (float)GRVCount[1];  
-//    GRVz = (float)GRVCount[2];   
-    
+  float right_dist = right_wheel.rotary_data();
+  dt_right_micros = micros() - past_right_micros;
+  float right_v = (right_dist - right_past_dist) * 1000 / dt_right_micros;
+  right_past_dist = right_dist;
+  past_right_micros = micros();
   
-//  Now = micros();
-//  deltat = ((Now - lastUpdate)/1000000.0f); // set integration time by time elapsed since last filter update
-//  lastUpdate = Now;
-//  
-//  sum += deltat; // sum for averaging filter update rate
-//  sumCount++;
+  float left_dist = left_wheel.rotary_data();
+  dt_left_micros = micros() - past_left_micros;
+  float left_v = (left_dist - left_past_dist) * 1000 / dt_left_micros;
+  left_past_dist = left_dist;
+  past_left_micros = micros();
+
+  vx = (left_v + right_v) /2;
+  vz = (right_v - left_v)/ base_width;
+
+  readyOdomMsg();
+  readyImuMsg();
+  readyImuStatus();
   
-  // Sensors x, y, and z-axes  for the three sensor: accel, gyro, and magnetometer are all aligned, so
-  // no allowance for any orientation mismatch in feeding the output to the quaternion filter is required.
-  // For the BNO055, the sensor forward is along the x-axis just like
-  // in the LSM9DS0 and MPU9250 sensors. This rotation can be modified to allow any convenient orientation convention.
-  // This is ok by aircraft orientation standards!  
-  // Pass gyro rate as rad/s
-//  MadgwickQuaternionUpdate(ax, ay, az, gx*PI/180.0f, gy*PI/180.0f, gz*PI/180.0f,  mx,  my,  mz);
-//  MahonyQuaternionUpdate(ax, ay, az, gx*PI/180.0f, gy*PI/180.0f, gz*PI/180.0f, mx, my, mz);
-    
-    // Serial print and/or display at 0.5 s rate independent of data rates
-//    delt_t = millis() - count;
-//    if (delt_t > 500) { // update LCD once per half-second independent of read rate
-//    
-//       // check BNO-055 error status at 2 Hz rate
-//    uint8_t sysstat = readByte(BNO055_ADDRESS, BNO055_SYS_STATUS); // check system status
-//    Serial.print("System Status = 0x"); Serial.println(sysstat, HEX);
-//    if(sysstat == 0x05) Serial.println("Sensor fusion algorithm running");
-//    if(sysstat == 0x06) Serial.println("Sensor fusion not algorithm running");
-//    
-//    if(sysstat == 0x01) {
-//       uint8_t syserr = readByte(BNO055_ADDRESS, BNO055_SYS_ERR);
-//      if(syserr == 0x01) Serial.println("Peripheral initialization error");
-//      if(syserr == 0x02) Serial.println("System initialization error");
-//      if(syserr == 0x03) Serial.println("Self test result failed");
-//      if(syserr == 0x04) Serial.println("Register map value out of range");
-//      if(syserr == 0x05) Serial.println("Register map address out of range");
-//      if(syserr == 0x06) Serial.println("Register map write error");
-//      if(syserr == 0x07) Serial.println("BNO low power mode no available for selected operation mode");
-//      if(syserr == 0x08) Serial.println("Accelerometer power mode not available");
-//      if(syserr == 0x09) Serial.println("Fusion algorithm configuration error");
-//      if(syserr == 0x0A) Serial.println("Sensor configuration error");    
-//    }  
-//
-//    if(SerialDebug) {
-//    Serial.print("ax = "); Serial.print((int)ax);  
-//    Serial.print(" ay = "); Serial.print((int)ay); 
-//    Serial.print(" az = "); Serial.print((int)az); Serial.println(" mg");
-//    Serial.print("gx = "); Serial.print( gx, 2); 
-//    Serial.print(" gy = "); Serial.print( gy, 2); 
-//    Serial.print(" gz = "); Serial.print( gz, 2); Serial.println(" deg/s");
-//    Serial.print("mx = "); Serial.print( (int)mx ); 
-//    Serial.print(" my = "); Serial.print( (int)my ); 
-//    Serial.print(" mz = "); Serial.print( (int)mz ); Serial.println(" mG");
-//    
-//    Serial.print("qx = "); Serial.print(q[0]);
-//    Serial.print(" qy = "); Serial.print(q[1]); 
-//    Serial.print(" qz = "); Serial.print(q[2]); 
-//    Serial.print(" qw = "); Serial.println(q[3]); 
-//    Serial.print("quatw = "); Serial.print(quat[0]);
-//    Serial.print(" quatx = "); Serial.print(quat[1]); 
-//    Serial.print(" quaty = "); Serial.print(quat[2]); 
-//    Serial.print(" quatz = "); Serial.println(quat[3]); 
-//    } 
-//    
-//    tempGCount = readGyroTempData();  // Read the gyro adc values
-//    Gtemperature = (float) tempGCount; // Gyro chip temperature in degrees Centigrade
-//   // Print gyro die temperature in degrees Centigrade      
-//    Serial.print("Gyro temperature is ");  Serial.print(Gtemperature, 1);  Serial.println(" degrees C"); // Print T values to tenths of a degree C
-//    
-//  // Define output variables from updated quaternion---these are Tait-Bryan angles, commonly used in aircraft orientation.
-//  // In this coordinate system, the positive z-axis is down toward Earth. 
-//  // Yaw is the angle between Sensor x-axis and Earth magnetic North (or true North if corrected for local declination, looking down on the sensor positive yaw is counterclockwise.
-//  // Pitch is angle between sensor x-axis and Earth ground plane, toward the Earth is positive, up toward the sky is negative.
-//  // Roll is angle between sensor y-axis and Earth ground plane, y-axis up is positive roll.
-//  // These arise from the definition of the homogeneous rotation matrix constructed from quaternions.
-//  // Tait-Bryan angles as well as Euler angles are non-commutative; that is, the get the correct orientation the rotations must be
-//  // applied in the correct order which for this configuration is yaw, pitch, and then roll.
-//  // For more see http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles which has additional links.
-//    yaw   = atan2(2.0f * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);   
-//    pitch = -asin(2.0f * (q[1] * q[3] - q[0] * q[2]));
-//    roll  = atan2(2.0f * (q[0] * q[1] + q[2] * q[3]), q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3]);
-//    pitch *= 180.0f / PI;
-//    yaw   *= 180.0f / PI; 
-// //   yaw   -= 13.8f; // Declination at Danville, California is 13 degrees 48 minutes and 47 seconds on 2014-04-04
-//    roll  *= 180.0f / PI;
-//     
-//    if(SerialDebug) {
-//    Serial.print("Software Yaw, Pitch, Roll: ");
-//    Serial.print(yaw, 2);
-//    Serial.print(", ");
-//    Serial.print(pitch, 2);
-//    Serial.print(", ");
-//    Serial.println(roll, 2);
-//    
-//    Serial.print("Hardware Yaw, Pitch, Roll: ");
-//    Serial.print(Yaw, 2);
-//    Serial.print(", ");
-//    Serial.print(Pitch, 2);
-//    Serial.print(", ");
-//    Serial.println(Roll, 2);
-// 
-//    Serial.print("Hardware x, y, z linear acceleration: ");
-//    Serial.print(LIAx, 2);
-//    Serial.print(", ");
-//    Serial.print(LIAy, 2);
-//    Serial.print(", ");
-//    Serial.println(LIAz, 2);
-//
-//    Serial.print("Hardware x, y, z gravity vector: ");
-//    Serial.print(GRVx, 2);
-//    Serial.print(", ");
-//    Serial.print(GRVy, 2);
-//    Serial.print(", ");
-//    Serial.println(GRVz, 2);
-// 
-//    
-//    Serial.print("rate = "); Serial.print((float)sumCount/sum, 2); Serial.println(" Hz");
-//    }
-//   
-//    digitalWrite(myLed, !digitalRead(myLed));
-//    count = millis(); 
-//    sumCount = 0;
-//    sum = 0;    
-//    }
-
-//   float left_dist  = left_wheel.rotary_data();   //check units
-//   float right_dist = right_wheel.rotary_data();
-//   dt_micros = micros() - past_micros;
-//   float left_v = (left_dist - left_past_dist) * 1000 / dt_micros;   //m/s
-//   float right_v = (right_dist - right_past_dist) * 1000 / dt_micros;
-//   get_odom(left_v, right_v);  //getting vx and vz (vth)
-//   left_past_dist = left_dist;
-//   right_past_dist = right_dist;
-//   past_micros = micros();
-   scorpion.get_vx_vth();
-
-   readyOdomMsg();
-   readyImuMsg();
-   readyImuStatus();
+  imuPub.publish(&imu_msg);
+  imuStatPub.publish(&imu_status);
+  odomPub.publish(&odom_msg);
    
-   imuPub.publish(&imu_msg);
-   imuStatPub.publish(&imu_status);
-   odomPub.publish(&odom_msg);
-   
-   nh.spinOnce();  
-   delay(BNO055_SAMPLERATE_DELAY_MS);
+  nh.spinOnce();  
+  delay(BNO055_SAMPLERATE_DELAY_MS);
 }
 
 //===================================================================================================================
@@ -1251,9 +982,9 @@ void readyOdomMsg(){
   odom_msg.pose.covariance[28]      = 0.001;  //0.0,    0.0,    0.0,    0.0,    0.001,  0.0,
   odom_msg.pose.covariance[35]      = 0.03;   //0.0,    0.0,    0.0,    0.0,    0.0,    0.03
 
-  odom_msg.twist.twist.linear.x     = scorpion.vx;  //change this
+  odom_msg.twist.twist.linear.x     = vx;  //change this
   odom_msg.twist.twist.linear.y     = 0.0;
-  odom_msg.twist.twist.linear.z     = scorpion.vth;       
+  odom_msg.twist.twist.linear.z     = vz;       
   odom_msg.twist.twist.angular.x    = 0.0;   
   odom_msg.twist.twist.angular.y    = 0.0;  
   odom_msg.twist.twist.angular.z    = 0.0;

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<launch>
+	<include file="ekf_navsat.launch"/>
+	<include file="hector_trajectory.launch"/>
+
+	<!--static transforms-->
+	<node pkg="tf2_ros" type="static_transform_publisher" name="bno_imu" args="-0.37 0 0.57 0 0 1.57 base_link imu_link" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="ppp_gps" args="1.08 0 0.6 0 0 0 base_link gps" />
+
+    <!--playing data-->
+    <node pkg="rosbag" type="play" name="rosbagplay" args="../tests/test_bags/2018-02-26-00-15-17.bag --clock -d 5 -r 2" required="true"/>
+
+    <!--if running ground truth-->
+    <!--include file="fve_markers_odom_run3.launch"/-->
+</launch>

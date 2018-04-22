@@ -166,22 +166,6 @@ Visualization Manager:
       Topic: /husky_velocity_controller/odom
       Unreliable: false
       Value: false
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: visualization_marker
-      Name: Marker
-      Namespaces:
-        {}
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /scorpion
-      Name: Scorpion_mesh
-      Namespaces:
-        scorpion: true
-      Queue Size: 100
-      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48

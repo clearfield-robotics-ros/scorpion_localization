@@ -188,4 +188,4 @@ class RosNMEADriver(object):
         #     return "%s/%s" % (prefix, frame_id)
         # else:
         #     return frame_id
-        return 'gps';
+        return "gps";

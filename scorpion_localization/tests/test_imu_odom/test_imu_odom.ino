@@ -280,7 +280,7 @@ float right_past_dist = 0;
 float left_dist = 0;
 float right_dist = 0;
 float vx;
-float vz;
+float vth;
 float base_width = 1.10515;
 
 uint8_t GPwrMode = NormalG;    // Gyro power mode
@@ -431,7 +431,7 @@ void loop()
   past_left_micros = micros();
 
   vx = (left_v + right_v) /2;
-  vz = (right_v - left_v)/ base_width;
+  vth = (right_v - left_v)/ base_width;
 
   readyOdomMsg();
   readyImuMsg();
@@ -984,10 +984,10 @@ void readyOdomMsg(){
 
   odom_msg.twist.twist.linear.x     = vx;  //change this
   odom_msg.twist.twist.linear.y     = 0.0;
-  odom_msg.twist.twist.linear.z     = vz;       
+  odom_msg.twist.twist.linear.z     = 0.0;       
   odom_msg.twist.twist.angular.x    = 0.0;   
   odom_msg.twist.twist.angular.y    = 0.0;  
-  odom_msg.twist.twist.angular.z    = 0.0;
+  odom_msg.twist.twist.angular.z    = vth;
   odom_msg.twist.covariance[0]      = 0.001;  //0.001,  0.0,    0.0,    0.0,    0.0,    0.0,
   odom_msg.twist.covariance[7]      = 0.001;  //0.0,    0.001,  0.0,    0.0,    0.0,    0.0,
   odom_msg.twist.covariance[14]     = 0.001;  //0.0,    0.0,    0.001,  0.0,    0.0,    0.0,

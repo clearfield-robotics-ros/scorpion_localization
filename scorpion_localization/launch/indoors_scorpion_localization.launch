@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <launch>
 	<include file="teensy3_2.launch"/>
-	 <node pkg="timed_roslaunch" type="timed_roslaunch.sh" args="2 scorpion_localization indoors_ekf.launch" name="timed_roslaunch" output="screen" />
+	 <node pkg="scorpion_localization" type="timed_roslaunch.sh" args="2 scorpion_localization indoors_ekf.launch" name="timed_roslaunch" output="screen" />
 	<include file="hector_trajectory.launch"/>
 
 	<!--static transforms-->

@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   sensor_msgs
   nav_msgs
+  message_generation
 )
 
 include_directories(include

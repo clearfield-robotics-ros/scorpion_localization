@@ -9,9 +9,12 @@
     <node pkg="tf2_ros" type="static_transform_publisher" name="ppp_gps" args="0.485 0 0.57 0 0 0 base_link /gps" />
 
     <!-- delayed launch of navsat transform -->
-    <node pkg="scorpion_localization" type="timed_roslaunch.sh" args="5 scorpion_localization navsat_transform.launch" name="timed_navsat_transform_launch" output="screen" />
+    <node pkg="scorpion_localization" type="timed_roslaunch.sh" args="5 scorpion_localization navsat_transform.launch" name="timed_navsat_transform_launch"/>
     <!-- delayed launch of ekf -->
-	<node pkg="scorpion_localization" type="timed_roslaunch.sh" args="5 scorpion_localization ekf.launch" name="timed_ekf_launch" output="screen" />
+	<node pkg="scorpion_localization" type="timed_roslaunch.sh" args="5 scorpion_localization ekf.launch" name="timed_ekf_launch"/>
+
+    <!-- stops update while braking -->
+    <node pkg="scorpion_localization" type="braking_localization.py" name="braking_localization" />
 
 	<!-- for visualizations -->
 	<!-- <include file="hector_trajectory.launch"/> -->

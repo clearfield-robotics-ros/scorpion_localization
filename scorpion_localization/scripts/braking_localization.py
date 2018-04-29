@@ -28,7 +28,7 @@ def main():
     brake_flag    = 0
 
     rospy.init_node('braking_localization')
-    rospy.Subscriber('odometry_filtered', Odometry, update_pose)
+    rospy.Subscriber('/odometry/filtered', Odometry, update_pose)
     rospy.Subscriber('/braking_desired_state', Int16, update_brakes)
     rospy.wait_for_service('/set_pose')
     set_pose = rospy.ServiceProxy('/set_pose', SetPose)

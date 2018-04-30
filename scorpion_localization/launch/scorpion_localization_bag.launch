@@ -8,7 +8,8 @@
 
     <!--static transforms-->
     <node pkg="tf2_ros" type="static_transform_publisher" name="bno_imu" args="0.68 0.115 0.57 3.14 0 0 base_link imu_link" />
-    <node pkg="tf2_ros" type="static_transform_publisher" name="ppp_gps" args="0.485 0 0.57 0 0 0 base_link /gps" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="ppp_gps" args="0.485 0 0.57 0 0 0 base_link gps" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="mine_marker" args="1.15 0 0 0 0 0 base_link mine_marker" />
 
     <!--playing data-->
     <!-- <node pkg="tf" type="tf_remap" name="tf_remapper" output="screen"> -->
@@ -19,6 +20,9 @@
 
     <node pkg="rosbag" type="play" name="rosbagplay" args="$(find scorpion_localization)/carpark_loop.bag --clock -d 5 -r 2" required="true">
     </node>
+
+    <!-- stops update while braking -->
+    <node pkg="scorpion_localization" type="braking_localization.py" name="braking_localization" />
 
     <!--<node name="rviz" pkg="rviz" type="rviz" args="-d $(find scorpion_localization)/launch/scorpion_localization.rviz"/>-->
     <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d /home/aaaaaaron/.rivz/default.rviz"/> -->

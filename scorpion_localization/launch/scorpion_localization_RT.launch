@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <launch>
+    <param name ="/use_sim_time" value="false"/>
+
 	<!--sensors and their transforms-->
 	<include file="GPS.launch"/>
 	<include file="teensy3_2.launch"/>
 
 	<!--static transforms-->
     <node pkg="tf2_ros" type="static_transform_publisher" name="bno_imu" args="0.68 0.115 0.57 3.14 0 0 base_link imu_link" />
-    <node pkg="tf2_ros" type="static_transform_publisher" name="ppp_gps" args="0.485 0 0.57 0 0 0 base_link /gps" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="ppp_gps" args="0.485 0 0.57 0 0 0 base_link gps" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="mine_marker" args="1.15 0 0 0 0 0 base_link mine_marker" />
 
     <!-- delayed launch of navsat transform -->
     <node pkg="scorpion_localization" type="timed_roslaunch.sh" args="5 scorpion_localization navsat_transform.launch" name="timed_navsat_transform_launch"/>
@@ -17,7 +20,7 @@
     <node pkg="scorpion_localization" type="braking_localization.py" name="braking_localization" />
 
 	<!-- for visualizations -->
-	<!-- <include file="hector_trajectory.launch"/> -->
+	<include file="hector_trajectory.launch"/>
 
     <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find scorpion_localization)/launch/scorpion_localization.rviz"/> -->
     <!--if running ground truth-->

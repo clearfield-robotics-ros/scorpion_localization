@@ -22,7 +22,7 @@
     </node>
 
     <!-- stops update while braking -->
-    <node pkg="scorpion_localization" type="braking_localization.py" name="braking_localization" />
+    <!-- <node pkg="scorpion_localization" type="braking_localization.py" name="braking_localization" /> -->
 
     <!--<node name="rviz" pkg="rviz" type="rviz" args="-d $(find scorpion_localization)/launch/scorpion_localization.rviz"/>-->
     <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d /home/aaaaaaron/.rivz/default.rviz"/> -->

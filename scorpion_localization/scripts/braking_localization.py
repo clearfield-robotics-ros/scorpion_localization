@@ -8,8 +8,6 @@ from std_msgs.msg import Int16
 from sensor_msgs.msg import NavSatFix
 from robot_localization.srv import SetPose
 import math
-from geopy import Point
-from geopy.distance import distance, VincentyDistance
 import utm
 
 def update_brakes(data):

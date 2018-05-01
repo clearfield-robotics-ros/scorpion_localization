@@ -8,7 +8,7 @@ def publish_world(data):
 	global br
 	br.sendTransform((data.pose.pose.position.x*1000.0, data.pose.pose.position.y*1000.0, data.pose.pose.position.z*1000.0),
             			(data.pose.pose.orientation.x, data.pose.pose.orientation.y, data.pose.pose.orientation.z, data.pose.pose.orientation.w),
-            			rospy.Time(0),
+            			rospy.Time.now(),
             			"base_link",
             			"world")
 
